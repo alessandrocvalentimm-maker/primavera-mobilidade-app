@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'alessandrocvalentimm@gmail.com' ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*admin.*')) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Validation for User profile
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'phone', 'role']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30 &&
+             data.role in ['passenger', 'driver', 'admin'];
+    }
+
+    // Validation for Driver entity
+    function isValidDriver(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'phone', 'cnhNumber', 'vehicleModel', 'vehiclePlate', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30 &&
+             data.cnhNumber is string && data.cnhNumber.size() > 0 && data.cnhNumber.size() <= 30 &&
+             data.vehicleModel is string && data.vehicleModel.size() > 0 && data.vehicleModel.size() <= 60 &&
+             data.vehiclePlate is string && data.vehiclePlate.size() > 0 && data.vehiclePlate.size() <= 15 &&
+             data.status in ['pending', 'approved', 'rejected', 'suspended'];
+    }
+
+    // Validation for Ride entity
+    function isValidRide(data) {
+      return data.keys().hasAll(['id', 'passengerId', 'price', 'status', 'paymentMethod']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.passengerId is string && data.passengerId.size() <= 128 &&
+             data.price is number && data.price >= 0 &&
+             data.status in ['requested', 'accepted', 'arriving', 'in_progress', 'completed', 'cancelled'] &&
+             data.paymentMethod in ['money', 'pix', 'card'];
+    }
+
+    // Validation for TariffConfig
+    function isValidTariff(data) {
+      return data.baseKmPrice is number && data.baseKmPrice > 0 &&
+             data.minFare is number && data.minFare > 0;
+    }
+
+    // Validation for Transaction
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['id', 'driverId', 'amount', 'type']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.driverId is string && data.driverId.size() <= 128 &&
+             data.amount is number &&
+             data.type in ['ride_fare', 'platform_fee', 'payout', 'deposit'];
+    }
+
+    // Admins collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.token.email == 'alessandrocvalentimm@gmail.com' || request.auth.uid == adminId);
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidUser(request.resource.data);
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Drivers collection
+    match /drivers/{driverId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (request.resource.data.userId == request.auth.uid || isAdmin()) && isValidDriver(request.resource.data);
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Rides collection
+    match /rides/{rideId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidRide(request.resource.data) && (request.resource.data.passengerId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Tariffs collection
+    match /tariffs/{tariffId} {
+      allow read: if true;
+      allow write: if isSignedIn() && (isAdmin() || request.auth.token.email == 'alessandrocvalentimm@gmail.com');
+    }
+
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Tickets collection
+    match /tickets/{ticketId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    // Diagnostic connection test document
+    match /_connection_test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

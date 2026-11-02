@@ -1,0 +1,152 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Perfil de usuário (passageiro ou admin) do Primavera Mobilidade",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 20 },
+        "email": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["passenger", "driver", "admin"] },
+        "photoUrl": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "phone", "role"]
+    },
+    "Driver": {
+      "title": "Driver",
+      "description": "Cadastro e documentação do motorista em Primavera do Leste",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 20 },
+        "cnhNumber": { "type": "string", "maxLength": 30 },
+        "cnhCategory": { "type": "string", "maxLength": 5 },
+        "vehicleModel": { "type": "string", "maxLength": 60 },
+        "vehiclePlate": { "type": "string", "maxLength": 10 },
+        "vehicleYear": { "type": "string", "maxLength": 4 },
+        "vehicleColor": { "type": "string", "maxLength": 30 },
+        "vehicleCategory": { "type": "string", "enum": ["Comum", "Conforto", "Moto"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "suspended"] },
+        "isOnline": { "type": "boolean" },
+        "walletBalance": { "type": "number" },
+        "pixKey": { "type": "string", "maxLength": 100 },
+        "rating": { "type": "number" },
+        "totalRides": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "userId", "name", "phone", "cnhNumber", "vehicleModel", "vehiclePlate", "status"]
+    },
+    "Ride": {
+      "title": "Ride",
+      "description": "Registro de corrida de transporte urbano em Primavera do Leste - MT",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "passengerId": { "type": "string", "maxLength": 128 },
+        "passengerName": { "type": "string", "maxLength": 100 },
+        "passengerPhone": { "type": "string", "maxLength": 20 },
+        "driverId": { "type": "string", "maxLength": 128 },
+        "driverName": { "type": "string", "maxLength": 100 },
+        "driverPhone": { "type": "string", "maxLength": 20 },
+        "vehicleInfo": { "type": "string", "maxLength": 100 },
+        "originAddress": { "type": "string", "maxLength": 200 },
+        "originLat": { "type": "number" },
+        "originLng": { "type": "number" },
+        "destAddress": { "type": "string", "maxLength": 200 },
+        "destLat": { "type": "number" },
+        "destLng": { "type": "number" },
+        "distanceKm": { "type": "number" },
+        "price": { "type": "number" },
+        "isNightSurcharge": { "type": "boolean" },
+        "platformFee": { "type": "number" },
+        "driverEarnings": { "type": "number" },
+        "status": { "type": "string", "enum": ["requested", "accepted", "arriving", "in_progress", "completed", "cancelled"] },
+        "paymentMethod": { "type": "string", "enum": ["money", "pix", "card"] },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid"] },
+        "rating": { "type": "number" },
+        "ratingComment": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "passengerId", "originAddress", "destAddress", "distanceKm", "price", "status", "paymentMethod"]
+    },
+    "TariffConfig": {
+      "title": "TariffConfig",
+      "description": "Configuração de tarifas do Primavera Mobilidade",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "baseKmPrice": { "type": "number" },
+        "minFare": { "type": "number" },
+        "nightSurchargePct": { "type": "number" },
+        "nightStartHour": { "type": "number" },
+        "nightEndHour": { "type": "number" },
+        "platformFeePerRide": { "type": "number" }
+      },
+      "required": ["baseKmPrice", "minFare", "nightSurchargePct", "platformFeePerRide"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Transação financeira da carteira do motorista ou plataforma",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "driverId": { "type": "string", "maxLength": 128 },
+        "rideId": { "type": "string", "maxLength": 128 },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["ride_fare", "platform_fee", "payout", "deposit"] },
+        "description": { "type": "string", "maxLength": 150 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "driverId", "amount", "type"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Chamados de suporte de passageiros e motoristas",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userRole": { "type": "string", "enum": ["passenger", "driver", "admin"] },
+        "subject": { "type": "string", "maxLength": 150 },
+        "message": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "reply": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["id", "userId", "subject", "message", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Perfis dos passageiros e administradores do aplicativo"
+    },
+    "/drivers/{driverId}": {
+      "schema": "Driver",
+      "description": "Cadastro e status dos motoristas parceiros em Primavera do Leste"
+    },
+    "/rides/{rideId}": {
+      "schema": "Ride",
+      "description": "Corridas solicitadas, em andamento e histórico"
+    },
+    "/tariffs/{tariffId}": {
+      "schema": "TariffConfig",
+      "description": "Parâmetros de preços da plataforma (R$ 2,00/km, mínima R$ 6,00, adicional noturno)"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Movimentações de saldo da carteira dos motoristas e taxas da plataforma"
+    },
+    "/tickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Chamados de atendimento e suporte aos usuários"
+    }
+  }
+}
